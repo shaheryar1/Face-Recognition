@@ -23,6 +23,7 @@ class FaceRecogniton:
     def __init__(self):
         self.encodings_pkl_file_name = "encodings.pkl"
         self.knn_model_file ='models/knn.pkl'
+        self.svm_model_file = 'models/svm.pkl'
 
     def saveEncodings(self, encodings, labels):
         dic = {
@@ -91,23 +92,21 @@ class FaceRecogniton:
             if face_distance < 0.55:
                 # print(face_distance)
                 result = True
-                return result
-        return result
+                return result,face_distance
+        return result,face_distance
 
-    # def deleteEncodings(self, target_label):
-    #
-    #     encodings, labels = self.loadEncodings(config.encodings_file_path)
-    #     encodings = np.array(encodings)
-    #     labels = np.array(labels)
-    #     idx = np.where(labels == target_label)
-    #     print(len(idx[0]))
-    #     labels = np.delete(labels, idx)
-    #     encodings = np.delete(encodings, idx, axis=0)
-    #     # return dict({
-    #     #     "encodings": list(encodings),
-    #     #     "labels": labels
-    #     # })
-    #     return list(encodings), labels;
+    def deleteEncodings(self, target_label):
+
+        encodings, labels = self.loadEncodings()
+        encodings = np.array(encodings)
+        labels = np.array(labels)
+        print("deleting")
+        idx = np.where(labels == target_label)
+        print(len(idx[0]))
+        labels = np.delete(labels, idx)
+        encodings = np.delete(encodings, idx, axis=0)
+
+        return list(encodings), labels;
 
     def addEncoding(self, new_label, new_images):
         encodings, labels = self.loadEncodings()
@@ -132,6 +131,8 @@ class FaceRecogniton:
         new_encodings, new_labels = self.addEncoding(label, imgs)
         self.saveEncodings(new_encodings, new_labels)
 
+
+
     def trainKNN(self, X_train, X_test, y_train, y_test, K):
         knn_clf = neighbors.KNeighborsClassifier(n_neighbors=K, weights='distance')
         knn_clf.fit(X_train, y_train)
@@ -141,32 +142,90 @@ class FaceRecogniton:
                 pickle.dump(knn_clf, f)
 
         p = knn_clf.predict(X_train)
-        print("Train Accuracy on KNN :", accuracy_score(y_train, p) * 100)
+        # print("Train Accuracy on KNN :", accuracy_score(y_train, p) * 100)
 
         p = knn_clf.predict(X_test)
-        print("Test Accuracy on KNN :", accuracy_score(y_test, p) * 100)
+        # print("Test Accuracy on KNN :", accuracy_score(y_test, p) * 100)
 
         return knn_clf;
 
-    def loadModel(self, path):
-        with open(path, 'rb') as file:
-            model = pickle.load(file)
+    def trainSVM(self, X_train, X_test, y_train, y_test, C):
+        clf = svm.SVC(C=C,probability=True)
+        clf.fit(X_train, y_train)
+
+        if self.knn_model_file is not None:
+            with open(self.svm_model_file, 'wb') as f:
+                pickle.dump(clf, f)
+
+        p = clf.predict(X_train)
+        print("Train Accuracy on SVM :", accuracy_score(y_train, p) * 100)
+
+        p = clf.predict(X_test)
+        print("Test Accuracy on SVM :", accuracy_score(y_test, p) * 100)
+
+        return clf;
+
+    def loadModel(self,type="knn"):
+        if type=="knn":
+            with open(self.knn_model_file, 'rb') as file:
+                model = pickle.load(file)
+        else:
+            with open(self.svm_model_file, 'rb') as file:
+                model = pickle.load(file)
+
         return model
 
-    def inference_image(self,model,img,known_encodings):
+    def inference_image(self,model,img):
+        known_encodings, labels = self.loadEncodings()
+        predictions=[]
+        scores=[]
         face_locations = face_recognition.face_locations(img, model='hog')
         if (len(face_locations) > 0):
             face_encodings = face_recognition.face_encodings(img, face_locations)
             for face_encoding,face_location in zip (face_encodings,face_locations):
                 p = model.predict([face_encoding])
 
-                if (self.isknown(known_encodings, face_encoding)):
-                    print(p)
-                    img=drawBox(img,face_location,p[0])
-
+                flag,distance=self.isknown(known_encodings, face_encoding)
+                if (flag):
+                    predictions.append(p[0])
                 else:
-                    img=drawBox(img,face_location,"Unknown")
+                    predictions.append("Unknown")
+                scores.append(distance)
+
+        return face_locations,predictions,scores
+    def visualize(self,img,face_locations,predictions):
+        for face_location,label in zip(face_locations,predictions):
+            img = drawBox(img, face_location, label)
         return img
+
+
+
+    def deletePerson(self, target_label):
+        new_encodings, new_labels = self.deleteEncodings(target_label)
+        self.saveEncodings(new_encodings, new_labels)
+
+    def inference_video(self,video_source,model):
+        cap = cv2.VideoCapture(video_source)
+        i = 0
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            if (i % 60 == 0):
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                boxes,labels=self.inference_image(model,frame)
+                img=self.visualize(frame,boxes,labels)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+
+
+
+            i=i+1
+            cv2.imshow('frame', img)
+            # cv2.imshow('frame', frame)
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("q"):
+                break
+
 
 
 
