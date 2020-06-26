@@ -89,7 +89,7 @@ class FaceRecogniton:
         face_distances = face_recognition.face_distance(known_encodings, test_encoding)
         result = False
         for i, face_distance in enumerate(face_distances):
-            if face_distance < 0.55:
+            if face_distance <= 0.55:
                 # print(face_distance)
                 result = True
                 return result,face_distance

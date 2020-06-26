@@ -39,26 +39,30 @@ async def add(folder_path: str,person_name:str):
 
 @app.post("/recognize")
 def recognize(file: bytes = File(...)):
-    f=FaceRecogniton()
-    image = Image.open(io.BytesIO(file)).convert("RGB")
-    img = np.array(image)
-    encodings, labels = f.loadEncodings()
-    f.trainKNN(encodings,encodings,labels,labels,2)
-    model=f.loadModel(type="knn")
-    boxes,predictions,scores = f.inference_image(model, img)
-    print(boxes)
+    try:
+        f=FaceRecogniton()
+        image = Image.open(io.BytesIO(file)).convert("RGB")
+        img = np.array(image)
+        encodings, labels = f.loadEncodings()
+        f.trainKNN(encodings,encodings,labels,labels,2)
+        model=f.loadModel(type="knn")
+        boxes,predictions,scores = f.inference_image(model, img)
+        print(boxes)
 
-    response={}
-    response["faces"]=[]
-    for box,label,s in zip(boxes,predictions,scores):
-        temp={}
-        temp["box"]=box
-        temp["label"]=label
-        temp["score"] = str(s)
-        response["faces"].append(temp)
+        response={}
+        response["faces"]=[]
+        for box,label,s in zip(boxes,predictions,scores):
+            temp={}
+            temp["box"]=box
+            temp["label"]=label
+            temp["score"] = str(s)
+            response["faces"].append(temp)
 
-    response["image"]=encode(f.visualize(img,boxes,predictions))
-    return response
+        response["image"]=encode(f.visualize(img,boxes,predictions))
+        return response
+    except Exception as e:
+        return {"Error": e}
+
 
 @app.post("/del")
 def delete(person_name:str):
@@ -76,7 +80,21 @@ def delete(person_name:str):
 
     except Exception as e:
         return {"Error":e}
-# 
+
+
+@app.get("/all_persons")
+def all():
+    try:
+        f = FaceRecogniton()
+        encodings, labels = f.loadEncodings()
+        labels=np.unique(np.array(labels))
+        labels=list(labels)
+        print(labels)
+        return {"persons":labels}
+    except Exception as e:
+        return {"Error": e}
+
+
 #
 #
 # if __name__ == '__main__':
