@@ -1,0 +1,8 @@
+numpy
+opencv-python==4.2.0.32
+dlib
+face_recognition
+imutils
+fastapi[all]
+python-multipart
+scikit-learn

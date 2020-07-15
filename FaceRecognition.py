@@ -4,6 +4,7 @@ import face_recognition
 from utils.ImageUtils import drawBox
 from datetime import datetime
 import face_recognition
+
 from sklearn import svm
 import os
 import  numpy as np
@@ -207,13 +208,13 @@ class FaceRecogniton:
     def inference_video(self,video_source,model):
         cap = cv2.VideoCapture(video_source)
         i = 0
-
         while cap.isOpened():
             ret, frame = cap.read()
 
-            if (i % 60 == 0):
+            # if (i % 60 == 0):
+            if True:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                boxes,labels=self.inference_image(model,frame)
+                boxes,labels,score=self.inference_image(model,frame)
                 img=self.visualize(frame,boxes,labels)
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 

@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+
 # from PIL.Image import Image
 import cv2
 import os
@@ -8,7 +8,8 @@ import numpy as np
 from FaceRecognition import FaceRecogniton
 from fastapi import FastAPI,File, UploadFile
 import os
-
+import dlib
+print(dlib.DLIB_USE_CUDA)
 import base64
 
 
@@ -97,21 +98,21 @@ def all():
 
 #
 #
-# if __name__ == '__main__':
-#     f=FaceRecogniton()
-#
-#     encodings,labels=f.loadEncodings()
-#     print(labels)
-#     type(encodings)
-#     # X_train, X_test, y_train, y_test = train_test_split(encodings, labels, test_size=0.25, shuffle=True, random_state=142)
-#     # print(len(X_train),len(X_test))
-#     model =f.trainKNN(encodings,encodings,labels,labels,2)
-#     f.inference_video('Tom.mp4',model)
-#
-#     # for path in os.listdir('test'):
-#     #     img = cv2.imread('test/'+path)
-#     #     img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-#     #     img=f.inference_image(model,img)
-#     #     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-#     #     print(img.shape,path)
-#     #     cv2.imwrite('results/'+path,img)
+if __name__ == '__main__':
+    f=FaceRecogniton()
+
+    encodings,labels=f.loadEncodings()
+    print(labels)
+    type(encodings)
+    # X_train, X_test, y_train, y_test = train_test_split(encodings, labels, test_size=0.25, shuffle=True, random_state=142)
+    # print(len(X_train),len(X_test))
+    model =f.trainKNN(encodings,encodings,labels,labels,2)
+    f.inference_video('Tom.mp4',model)
+
+    # for path in os.listdir('test'):
+    #     img = cv2.imread('test/'+path)
+    #     img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    #     img=f.inference_image(model,img)
+    #     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    #     print(img.shape,path)
+    #     cv2.imwrite('results/'+path,img)
